@@ -18,6 +18,7 @@ class Blob extends AbstractModel
     protected $mode;
     protected $hash;
     protected $name;
+    protected $age;
     protected $size;
 
     public function __construct($hash, Repository $repository)
@@ -67,6 +68,16 @@ class Blob extends AbstractModel
         $this->name = $name;
 
         return $this;
+    }
+
+    public function getAge()
+    {
+        return $this->age;
+    }
+
+    public function setAge($age)
+    {
+        $this->age = $age;
     }
 
     public function getSize()

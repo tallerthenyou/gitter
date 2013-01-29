@@ -18,6 +18,7 @@ class Tree extends AbstractModel implements \RecursiveIterator
     protected $mode;
     protected $hash;
     protected $name;
+    protected $path;
     protected $data;
     protected $position = 0;
 
@@ -25,6 +26,7 @@ class Tree extends AbstractModel implements \RecursiveIterator
     {
         $this->setHash($hash);
         $this->setRepository($repository);
+        $this->setPath($hash == "master" ? "" : preg_replace("/master.*\"(.*)\"\//", "$1", $hash));
     }
 
     public function parse()
@@ -48,6 +50,8 @@ class Tree extends AbstractModel implements \RecursiveIterator
                 // submodule
                 continue;
             }
+
+            $filePath = $this->getPath() != "" ? $this->getPath() . "/$file[4]" : $file[4];
 
             if ($file[0] == '120000') {
                 $show = $this->getRepository()->getClient()->run($this->getRepository(), 'show ' . $file[2]);
@@ -75,6 +79,30 @@ class Tree extends AbstractModel implements \RecursiveIterator
         }
 
         $this->data = $root;
+    }
+
+    public function details()
+    {
+        $details = array();
+
+        foreach ($this as $node) {
+            if ($node instanceof SymLink) {
+              continue;
+            }
+
+            $filePath = $this->getPath() != "" ? $this->getPath() . '/' . $node->getName() : $node->getName();
+
+            $age = $this->getClient()->run($this->getRepository(), 'log -1 --date=relative --format="%ad" -- "' . $filePath . '"');
+            $comment = $this->getClient()->run($this->getRepository(), 'log -1 --format="%s" -- "' . $filePath . '"');
+
+	    $detail['hash'] = $node->getHash();
+            $detail['age'] = preg_replace("/(\d year.*),.*/", "$1 ago", trim($age));
+            $detail['comment'] = trim($comment);
+
+            $details[] = $detail;
+        }
+
+        return $details;
     }
 
     public function output()
@@ -188,5 +216,17 @@ class Tree extends AbstractModel implements \RecursiveIterator
         $this->name = $name;
 
         return $this;
+    }
+
+    public function getPath()
+    {
+        return $this->path;
+    }
+
+    public function setPath($path)
+    {
+        $this->path = $path;
+
+		  return $this;
     }
 }
